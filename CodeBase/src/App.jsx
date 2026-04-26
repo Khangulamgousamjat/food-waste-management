@@ -15,7 +15,7 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 import Auth from "./components/Auth";
 import FoodMap from "./components/Map";
 import Dashboard from "./pages/Dashboard";
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+import AdminDashboard from "./pages/AdminDashboard";
 
 const ADMIN_EMAIL = "Gousk2004@gmail.com";
 
@@ -133,9 +133,7 @@ function App() {
           path="/admin" 
           element={
             isAdmin ? (
-              <Suspense fallback={<LoadingFallback />}>
-                <AdminDashboard />
-              </Suspense>
+              <AdminDashboard />
             ) : (
               <Navigate to="/login" replace />
             )

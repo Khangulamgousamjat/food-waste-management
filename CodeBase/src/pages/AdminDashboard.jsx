@@ -7,11 +7,13 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [users, setUsers] = useState([]);
   const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Fetch real-time data
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
       setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setLoading(false);
     });
     const unsubListings = onSnapshot(collection(db, "listings"), (snap) => {
       setListings(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
@@ -21,6 +23,14 @@ const AdminDashboard = () => {
       unsubListings();
     };
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#16a34a", fontSize: "16px", fontWeight: "600" }}>
+        Loading Admin Data...
+      </div>
+    );
+  }
 
   const handleSignOut = () => signOut(auth);
 
