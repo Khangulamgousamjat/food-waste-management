@@ -121,6 +121,7 @@ const Auth = ({ onSuccess }) => {
       "auth/popup-blocked": "Popup was blocked. Redirecting you to Google sign-in...",
       "auth/too-many-requests": "Too many failed attempts. Please wait a moment.",
       "auth/network-request-failed": "Network error. Please check your connection.",
+      "auth/unauthorized-domain": "This domain is not authorized for Google sign-in. Please contact support.",
     };
     return errors[code] || `Login failed (${code}). Please try again.`;
   };
