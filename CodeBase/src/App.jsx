@@ -66,7 +66,7 @@ function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        if (u.email === ADMIN_EMAIL) {
+        if (u.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
           setIsAdmin(true);
           setUser(u);
         } else {

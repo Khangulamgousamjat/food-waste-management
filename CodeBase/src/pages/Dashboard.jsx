@@ -27,8 +27,8 @@ const Dashboard = () => {
   const [myListings, setMyListings] = useState([]);
   const [availableListings, setAvailableListings] = useState([]);
   const [myClaimed, setMyClaimed] = useState([]);
-  // Recipients see Available Food first; donors see their overview
-  const [activeTab, setActiveTab] = useState("available");
+  // Donors default to overview; recipients will switch to 'available' once profile loads
+  const [activeTab, setActiveTab] = useState("overview");
   const [leaderboard, setLeaderboard] = useState([]);
   const [stats, setStats] = useState({ total: 0, available: 0, claimed: 0 });
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -53,8 +53,22 @@ const Dashboard = () => {
       if (snap.exists()) {
         const profile = snap.data();
         setUserProfile(profile);
-        // Donors default to overview, recipients default to available food
-        setActiveTab(profile.role === "donor" ? "overview" : "available");
+        // Only override tab for recipients — donors stay on overview
+        if (profile.role === "recipient") {
+          setActiveTab("available");
+        }
+      } else {
+        // No Firestore doc — create a sensible default so page doesn't stay blank
+        const defaultProfile = {
+          uid: user.uid,
+          name: user.displayName || user.email?.split("@")[0] || "User",
+          email: user.email,
+          role: "donor",
+          points: 0,
+          badges: [],
+        };
+        setUserProfile(defaultProfile);
+        setActiveTab("overview");
       }
     });
     return () => unsub();
@@ -246,7 +260,9 @@ const Dashboard = () => {
             {(user.displayName || user.email || "U")[0].toUpperCase()}
           </div>
           <div>
-            <div style={styles.userName}>{user.displayName || "User"}</div>
+            <div style={styles.userName}>
+            {user.displayName || user.email?.split("@")[0] || "User"}
+          </div>
             <div style={styles.userEmail}>{user.email}</div>
             <div style={styles.userRole}>{userProfile?.role || "donor"}</div>
           </div>

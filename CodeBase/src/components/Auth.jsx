@@ -129,6 +129,9 @@ const Auth = ({ onSuccess }) => {
   return (
     <div style={styles.overlay}>
       <div style={styles.card}>
+        {/* Home button */}
+        <a href="/" style={styles.homeBtn}>← Back to Home</a>
+
         {/* Logo */}
         <div style={styles.logo}>
           <span style={styles.logoText}>FoodShare</span>
@@ -277,6 +280,18 @@ const styles = {
   logo: { textAlign: "center", marginBottom: "1.5rem" },
   logoText: { fontSize: 28, fontWeight: 700, color: "#16a34a" },
   logoSub: { fontSize: 14, color: "#6b7280", marginTop: 4 },
+  homeBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    fontSize: 13,
+    color: "#6b7280",
+    textDecoration: "none",
+    marginBottom: "1rem",
+    padding: "4px 0",
+    fontWeight: 500,
+    transition: "color 0.2s",
+  },
+
   tabBar: {
     display: "flex",
     background: "#f3f4f6",
