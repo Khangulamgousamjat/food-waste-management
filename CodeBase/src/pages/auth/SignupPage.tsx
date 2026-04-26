@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signUp } from "../../lib/supabase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../../firebase";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import {
@@ -10,7 +12,6 @@ import {
   AlertCircle,
   Building,
   Home,
-  FileText,
   Upload,
 } from "lucide-react";
 
@@ -150,56 +151,43 @@ const SignupPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateStep2()) {
-      return;
-    }
-
+    if (!validateStep2()) return;
     setIsLoading(true);
-
     try {
-      // Prepare user data for Supabase
-      const userData = {
-        full_name: formData.fullName,
-        username: formData.username,
-        account_type: formData.accountType,
-        organization: formData.organization,
-        address: formData.address,
-        phone: formData.phone,
-        ngo_certification:
-          formData.accountType === "donor" && formData.ngoCertification
-            ? await uploadNgoCertification(formData.ngoCertification)
-            : null,
-      };
+      // Create Firebase Auth user
+      const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Set display name
+      await updateProfile(user, { displayName: formData.fullName });
+      
+      // Save profile to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: formData.fullName,
+        email: formData.email,
+        role: formData.accountType || "donor",
+        organization: formData.organization || "",
+        address: formData.address || "",
+        phone: formData.phone || "",
+        points: 0,
+        badges: [],
+        totalDonations: 0,
+        createdAt: serverTimestamp(),
+      });
 
-      const { data, error } = await signUp(
-        formData.email,
-        formData.password,
-        userData
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(
-        "Account created successfully! Please check your email to confirm your registration."
-      );
-      navigate("/auth/login");
+      toast.success("Account created successfully! Welcome to FoodShare!");
+      navigate("/dashboard");
     } catch (error: any) {
-      toast.error(
-        error.message || "Failed to create account. Please try again."
-      );
-      setErrors({ general: error.message || "Failed to create account" });
+      const friendlyMsg =
+        error.code === 'auth/email-already-in-use' ? 'This email is already registered.' :
+        error.code === 'auth/weak-password' ? 'Password must be at least 6 characters.' :
+        error.code === 'auth/invalid-email' ? 'Please enter a valid email address.' :
+        error.message || "Failed to create account. Please try again.";
+      toast.error(friendlyMsg);
+      setErrors({ general: friendlyMsg });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const uploadNgoCertification = async (file: File) => {
-    // Implement file upload logic here
-    // This is a placeholder - you'll need to implement the actual file upload
-    return "certification_url";
   };
 
   return (

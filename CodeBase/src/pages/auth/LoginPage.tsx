@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signIn } from '../../lib/supabase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../firebase';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+
+const ADMIN_EMAIL = "Gousk2004@gmail.com";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,8 +20,6 @@ const LoginPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user corrects the field
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -30,44 +31,38 @@ const LoginPage: React.FC = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
     setIsLoading(true);
-    
     try {
-      const { data, error } = await signIn(formData.email, formData.password);
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.user) {
-        toast.success('Login successful!');
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      toast.success('Login successful!');
+      if (userCredential.user.email === ADMIN_EMAIL) {
+        navigate('/admin');
+      } else {
         navigate('/dashboard');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to login. Please try again.');
-      setErrors({ general: error.message || 'Failed to login' });
+      const friendlyMsg =
+        error.code === 'auth/user-not-found' ? 'No account found with this email.' :
+        error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential' ? 'Incorrect password. Try again.' :
+        error.code === 'auth/invalid-email' ? 'Please enter a valid email address.' :
+        'Failed to login. Please try again.';
+      toast.error(friendlyMsg);
+      setErrors({ general: friendlyMsg });
     } finally {
       setIsLoading(false);
     }
