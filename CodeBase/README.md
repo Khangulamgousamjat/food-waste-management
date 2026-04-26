@@ -195,9 +195,18 @@ A **live web platform** where:
 
 ## 📸 Screenshots
 
-```md
-(Add your real screenshots here — homepage, map, dashboard, etc.)
-```
+![Uploading Screenshot (72).png..]()
+
+---
+
+## ⭐ Why This Project Stands Out
+
+FoodShare is not just a project — it’s a **real-world scalable solution** addressing two major global problems:
+
+👉 Hunger
+👉 Food Waste
+
+Built with **technology + social impact + usability**, it is hackathon-ready and production-capable.
 
 ---
 
