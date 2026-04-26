@@ -176,12 +176,31 @@ A **live web platform** where:
 
 ---
 
-## ⭐ Why This Project Stands Out
+## 📂 Project Structure
 
-FoodShare is not just a project —
-it’s a **real-world scalable solution** addressing two major global problems:
+```text
+📦 FoodShare
+ ┣ 📂 public               # Static assets (images, icons)
+ ┣ 📂 src                  # Main source code
+ ┃ ┣ 📂 components         # Reusable UI components
+ ┃ ┃ ┣ 📂 ui               # Layout elements (NavBar, Footer)
+ ┃ ┃ ┣ 📜 Auth.jsx         # Authentication logic & UI
+ ┃ ┃ ┣ 📜 DonationModal.jsx # Food listing form
+ ┃ ┃ ┗ 📜 Map.jsx          # Interactive Leaflet map
+ ┃ ┣ 📂 pages              # Application views
+ ┃ ┃ ┣ 📜 HomePage.tsx     # Landing page
+ ┃ ┃ ┣ 📜 Dashboard.jsx    # User portal (Donor/Recipient)
+ ┃ ┃ ┗ 📜 AdminDashboard.jsx # Administrative control
+ ┃ ┣ 📜 App.jsx            # Routing & global state
+ ┃ ┣ 📜 firebase.js        # Firebase initialization
+ ┃ ┗ 📜 index.css          # Global styling & Tailwind
+ ┣ 📜 firestore.rules      # Security rules for Firestore
+ ┣ 📜 package.json         # Dependencies & scripts
+ ┗ 📜 README.md            # Documentation
+```
 
-👉 Hunger
-👉 Food Waste
+---
 
-Built with **technology + social impact + usability**, it is hackathon-ready and production-capable.
+<p align="center">
+  Made with ❤️ by <b>Gous Khan</b>
+</p>
