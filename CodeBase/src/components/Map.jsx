@@ -6,10 +6,10 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { db } from "../firebase";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, increment, getDoc } from "firebase/firestore";
 import { auth } from "../firebase";
 
-// Fix default marker icons for Leaflet + React
+// Fix default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -17,37 +17,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// Custom green marker for donors
 const donorIcon = L.divIcon({
   className: "",
-  html: `<div style="
-    width:36px;height:36px;border-radius:50% 50% 50% 0;
-    background:#16a34a;border:3px solid #fff;
-    box-shadow:0 2px 8px rgba(0,0,0,0.3);
-    transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;">
-    <span style="transform:rotate(45deg);font-size:16px;">🍱</span>
-  </div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -40],
+  html: `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:#16a34a;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:16px;">🍱</span></div>`,
+  iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -40],
 });
 
-// Blue marker for recipients
 const recipientIcon = L.divIcon({
   className: "",
-  html: `<div style="
-    width:36px;height:36px;border-radius:50% 50% 50% 0;
-    background:#2563eb;border:3px solid #fff;
-    box-shadow:0 2px 8px rgba(0,0,0,0.3);
-    transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;">
-    <span style="transform:rotate(45deg);font-size:16px;">🤲</span>
-  </div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -40],
+  html: `<div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:#2563eb;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:16px;">🤲</span></div>`,
+  iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -40],
 });
 
-// Component to recenter map
 const RecenterMap = ({ center }) => {
   const map = useMap();
   useEffect(() => { map.setView(center, 13); }, [center, map]);
@@ -56,73 +37,98 @@ const RecenterMap = ({ center }) => {
 
 const FoodMap = () => {
   const [listings, setListings] = useState([]);
-  const [filter, setFilter] = useState("all"); // "all" | "available" | "claimed"
-  const [userLocation, setUserLocation] = useState([20.5937, 78.9629]); // India default
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newListing, setNewListing] = useState({
-    title: "", description: "", quantity: "", type: "donor",
-  });
-  const [adding, setAdding] = useState(false);
+  const [filter, setFilter] = useState("available"); // show available by default
+  const [userLocation, setUserLocation] = useState([20.5937, 78.9629]);
   const [liveCount, setLiveCount] = useState(0);
+  const [userProfile, setUserProfile] = useState(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Get user's real location
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-      () => {} // fallback to default
+      () => {}
     );
   }, []);
 
-  // Real-time Firestore listener
   useEffect(() => {
-    let q = collection(db, "listings");
-    if (filter !== "all") {
-      q = query(collection(db, "listings"), where("status", "==", filter));
-    }
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (!auth.currentUser) return;
+    const fetchProfile = async () => {
+      const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (snap.exists()) setUserProfile(snap.data());
+    };
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "listings"), (snap) => {
+      let data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      
+      // Auto-expire check
+      data.forEach(async (listing) => {
+        if (listing.status === "available" && listing.expiryTime && listing.expiryTime < Date.now()) {
+          await updateDoc(doc(db, "listings", listing.id), { status: "expired" });
+          listing.status = "expired";
+        }
+      });
+
+      if (filter !== "all") {
+        data = data.filter((l) => l.status === filter);
+      }
       setListings(data);
-      setLiveCount(data.filter((l) => l.status === "available").length);
+      setLiveCount(snap.docs.filter((d) => d.data().status === "available").length);
     });
     return () => unsub();
   }, [filter]);
 
-  const handleAddListing = async (e) => {
-    e.preventDefault();
-    if (!auth.currentUser) { alert("Please log in to add a listing."); return; }
-    setAdding(true);
+  const claimFood = async (listing) => {
+    if (!auth.currentUser) return alert("Please log in.");
     try {
-      await addDoc(collection(db, "listings"), {
-        ...newListing,
-        lat: userLocation[0] + (Math.random() - 0.5) * 0.02, // slight offset for demo
-        lng: userLocation[1] + (Math.random() - 0.5) * 0.02,
-        status: "available",
-        userId: auth.currentUser.uid,
-        userName: auth.currentUser.displayName || "Anonymous",
-        createdAt: serverTimestamp(),
+      await updateDoc(doc(db, "listings", listing.id), {
+        status: "claimed",
+        claimedBy: auth.currentUser.uid,
       });
-      setNewListing({ title: "", description: "", quantity: "", type: "donor" });
-      setShowAddForm(false);
+      if (listing.donorId) {
+        await updateDoc(doc(db, "users", listing.donorId), {
+          points: increment(5),
+        });
+      }
+      alert("Food claimed successfully!");
     } catch (err) {
-      alert("Error adding listing: " + err.message);
-    } finally {
-      setAdding(false);
+      alert("Failed to claim food: " + err.message);
     }
   };
 
-  const formatTime = (ts) => {
-    if (!ts) return "Just now";
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    const diff = Math.floor((Date.now() - date) / 60000);
-    if (diff < 1) return "Just now";
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    return `${Math.floor(diff / 1440)}d ago`;
+  const formatCountdown = (expiryTime) => {
+    if (!expiryTime) return null;
+    const diff = expiryTime - currentTime;
+    if (diff <= 0) return { text: "Expired", color: "#9ca3af", urgent: true };
+
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+
+    if (hours >= 4) return { text: `Expires in ${hours} hours`, color: "#16a34a", urgent: false };
+    if (hours >= 2) return { text: `Expiring soon - ${hours} hours left`, color: "#d97706", urgent: false };
+    const remainingMins = mins % 60;
+    const hText = hours > 0 ? `${hours}h ` : "";
+    return { text: `Urgent! Expires in ${hText}${remainingMins} mins`, color: "#dc2626", urgent: true };
   };
+
+  const getFoodTypeInfo = (type) => {
+    if (type === "veg") return "🌿 Veg";
+    if (type === "nonveg") return "🍗 Non-Veg";
+    if (type === "vegan") return "🌱 Vegan";
+    return "🍽️ Unknown";
+  };
+
+  const isRecipient = userProfile?.role === "recipient";
 
   return (
     <div style={styles.wrapper}>
-      {/* Header bar */}
       <div style={styles.topBar}>
         <div style={styles.liveChip}>
           <span style={styles.liveDot} />
@@ -140,170 +146,90 @@ const FoodMap = () => {
             </button>
           ))}
         </div>
-
-        <button style={styles.addBtn} onClick={() => setShowAddForm((v) => !v)}>
-          {showAddForm ? "✕ Close" : "+ Add Listing"}
-        </button>
       </div>
 
-      {/* Add Listing Panel */}
-      {showAddForm && (
-        <div style={styles.addPanel}>
-          <form onSubmit={handleAddListing} style={styles.addForm}>
-            <div style={styles.formRow}>
-              <input
-                placeholder="Food item name (e.g. Rice & Dal)"
-                value={newListing.title}
-                onChange={(e) => setNewListing((p) => ({ ...p, title: e.target.value }))}
-                required
-                style={styles.formInput}
-              />
-              <input
-                placeholder="Quantity (e.g. 10 meals)"
-                value={newListing.quantity}
-                onChange={(e) => setNewListing((p) => ({ ...p, quantity: e.target.value }))}
-                required
-                style={{ ...styles.formInput, maxWidth: 160 }}
-              />
-            </div>
-            <input
-              placeholder="Short description or pickup instructions"
-              value={newListing.description}
-              onChange={(e) => setNewListing((p) => ({ ...p, description: e.target.value }))}
-              style={{ ...styles.formInput, width: "100%", boxSizing: "border-box" }}
-            />
-            <div style={styles.formRow}>
-              <select
-                value={newListing.type}
-                onChange={(e) => setNewListing((p) => ({ ...p, type: e.target.value }))}
-                style={styles.formSelect}
-              >
-                <option value="donor">I am donating food</option>
-                <option value="recipient">I need food</option>
-              </select>
-              <button type="submit" style={styles.submitBtn} disabled={adding}>
-                {adding ? "Adding..." : "Add to Map"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Map */}
-      <MapContainer
-        center={userLocation}
-        zoom={13}
-        style={styles.map}
-        zoomControl={true}
-      >
+      <MapContainer center={userLocation} zoom={13} style={styles.map} zoomControl={true}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
         <RecenterMap center={userLocation} />
 
-        {listings.map((listing) =>
-          listing.lat && listing.lng ? (
-            <Marker
-              key={listing.id}
-              position={[listing.lat, listing.lng]}
-              icon={listing.type === "donor" ? donorIcon : recipientIcon}
-            >
-              <Popup>
+        {listings.map((listing) => {
+          if (!listing.lat || !listing.lng) return null;
+          const countdown = formatCountdown(listing.expiryTime);
+          
+          return (
+            <Marker key={listing.id} position={[listing.lat, listing.lng]} icon={donorIcon}>
+              <Popup maxWidth={250}>
                 <div style={styles.popup}>
-                  <div style={styles.popupBadge(listing.status)}>
-                    {listing.status === "available" ? "Available" : "Claimed"}
+                  {listing.imageUrl ? (
+                    <img src={listing.imageUrl} alt={listing.title} style={styles.popupImg} />
+                  ) : (
+                    <div style={styles.popupImgPlaceholder}>No Image</div>
+                  )}
+                  
+                  <div style={styles.popupContent}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <strong style={styles.popupTitle}>{listing.title}</strong>
+                      <span style={styles.popupBadge(listing.status)}>
+                        {listing.status === "available" ? "Available" : "Claimed"}
+                      </span>
+                    </div>
+
+                    <div style={styles.popupTypeBadge}>{getFoodTypeInfo(listing.foodType)}</div>
+                    <p style={styles.popupDesc}>{listing.description}</p>
+                    
+                    <ul style={styles.popupList}>
+                      <li><strong>Qty:</strong> {listing.quantity}</li>
+                      <li><strong>Prep:</strong> {listing.cookedType?.replace('_', ' ')}</li>
+                      <li><strong>Donor:</strong> {listing.donorName}</li>
+                      <li><strong>Pickup:</strong> {listing.pickupLocation}</li>
+                      <li><strong>Contact:</strong> {listing.contactNumber}</li>
+                    </ul>
+
+                    {countdown && listing.status === "available" && (
+                      <div style={{...styles.popupCountdown, color: countdown.color, background: countdown.urgent ? "#fee2e2" : "#f0fdf4"}}>
+                        ⏱ {countdown.text}
+                      </div>
+                    )}
+
+                    {isRecipient && listing.status === "available" && (
+                      <button style={styles.claimBtn} onClick={() => claimFood(listing)}>
+                        Claim This Food
+                      </button>
+                    )}
                   </div>
-                  <strong style={styles.popupTitle}>{listing.title}</strong>
-                  <p style={styles.popupDesc}>{listing.description}</p>
-                  <p style={styles.popupMeta}>
-                    🍽️ {listing.quantity} &nbsp;·&nbsp; ⏱ {formatTime(listing.createdAt)}
-                  </p>
-                  <p style={styles.popupUser}>By {listing.userName}</p>
                 </div>
               </Popup>
             </Marker>
-          ) : null
-        )}
+          );
+        })}
       </MapContainer>
-
-      {/* Legend */}
-      <div style={styles.legend}>
-        <span style={styles.legendItem}><span style={{ color: "#16a34a" }}>🍱</span> Donor</span>
-        <span style={styles.legendItem}><span style={{ color: "#2563eb" }}>🤲</span> Recipient</span>
-        <span style={{ fontSize: 11, color: "#9ca3af" }}>Updates live via Firebase</span>
-      </div>
     </div>
   );
 };
 
 const styles = {
-  wrapper: { display: "flex", flexDirection: "column", height: "100vh" },
-  topBar: {
-    display: "flex", alignItems: "center", gap: 12,
-    padding: "10px 16px", background: "#fff",
-    borderBottom: "1px solid #e5e7eb", flexWrap: "wrap",
-  },
-  liveChip: {
-    display: "flex", alignItems: "center", gap: 6,
-    background: "#f0fdf4", border: "1px solid #bbf7d0",
-    borderRadius: 20, padding: "4px 12px",
-    fontSize: 13, fontWeight: 500, color: "#16a34a",
-  },
-  liveDot: {
-    width: 8, height: 8, borderRadius: "50%",
-    background: "#16a34a", animation: "pulse 1.5s infinite",
-  },
+  wrapper: { display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" },
+  topBar: { display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "#fff", borderBottom: "1px solid #e5e7eb", flexWrap: "wrap" },
+  liveChip: { display: "flex", alignItems: "center", gap: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "4px 12px", fontSize: 13, fontWeight: 500, color: "#16a34a" },
+  liveDot: { width: 8, height: 8, borderRadius: "50%", background: "#16a34a", animation: "pulse 1.5s infinite" },
   filters: { display: "flex", gap: 6 },
-  filterBtn: {
-    padding: "5px 14px", border: "1px solid #e5e7eb",
-    borderRadius: 20, background: "#fff", cursor: "pointer",
-    fontSize: 13, color: "#6b7280",
-  },
+  filterBtn: { padding: "5px 14px", border: "1px solid #e5e7eb", borderRadius: 20, background: "#fff", cursor: "pointer", fontSize: 13, color: "#6b7280" },
   filterActive: { background: "#16a34a", color: "#fff", border: "1px solid #16a34a" },
-  addBtn: {
-    marginLeft: "auto", padding: "7px 16px",
-    background: "#16a34a", color: "#fff",
-    border: "none", borderRadius: 8,
-    cursor: "pointer", fontSize: 13, fontWeight: 600,
-  },
-  addPanel: {
-    background: "#f9fafb", borderBottom: "1px solid #e5e7eb", padding: "12px 16px",
-  },
-  addForm: { display: "flex", flexDirection: "column", gap: 10 },
-  formRow: { display: "flex", gap: 10, flexWrap: "wrap" },
-  formInput: {
-    flex: 1, padding: "8px 12px", border: "1px solid #e5e7eb",
-    borderRadius: 8, fontSize: 13, outline: "none",
-  },
-  formSelect: {
-    flex: 1, padding: "8px 12px", border: "1px solid #e5e7eb",
-    borderRadius: 8, fontSize: 13, background: "#fff", outline: "none",
-  },
-  submitBtn: {
-    padding: "8px 20px", background: "#16a34a", color: "#fff",
-    border: "none", borderRadius: 8, cursor: "pointer",
-    fontSize: 13, fontWeight: 600,
-  },
   map: { flex: 1 },
-  legend: {
-    display: "flex", alignItems: "center", gap: 16,
-    padding: "8px 16px", background: "#fff",
-    borderTop: "1px solid #e5e7eb", fontSize: 13,
-  },
-  legendItem: { display: "flex", alignItems: "center", gap: 4 },
-  popup: { minWidth: 180 },
-  popupBadge: (status) => ({
-    display: "inline-block", padding: "2px 8px",
-    borderRadius: 10, fontSize: 11, fontWeight: 600,
-    marginBottom: 6,
-    background: status === "available" ? "#dcfce7" : "#f3f4f6",
-    color: status === "available" ? "#16a34a" : "#6b7280",
-  }),
-  popupTitle: { display: "block", fontSize: 15, marginBottom: 4 },
-  popupDesc: { fontSize: 13, color: "#6b7280", margin: "0 0 6px" },
-  popupMeta: { fontSize: 12, color: "#9ca3af", margin: "0 0 4px" },
-  popupUser: { fontSize: 12, color: "#9ca3af", margin: 0 },
+  popup: { minWidth: 200, padding: 0, margin: "-14px -20px", overflow: "hidden", borderRadius: 12, display: "flex", flexDirection: "column" },
+  popupImg: { width: "100%", height: 100, objectFit: "cover" },
+  popupImgPlaceholder: { width: "100%", height: 80, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 12 },
+  popupContent: { padding: 12, display: "flex", flexDirection: "column", gap: 4 },
+  popupTitle: { fontSize: 15, m: 0, color: "#111827" },
+  popupBadge: (status) => ({ padding: "2px 6px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: status === "available" ? "#dcfce7" : "#f3f4f6", color: status === "available" ? "#16a34a" : "#6b7280" }),
+  popupTypeBadge: { fontSize: 11, fontWeight: 600, color: "#4b5563", background: "#f3f4f6", padding: "2px 6px", borderRadius: 4, display: "inline-block", alignSelf: "flex-start", marginBottom: 4 },
+  popupDesc: { fontSize: 12, color: "#6b7280", margin: "4px 0" },
+  popupList: { margin: "4px 0", padding: 0, listStyle: "none", fontSize: 11, color: "#4b5563", display: "flex", flexDirection: "column", gap: 2 },
+  popupCountdown: { fontSize: 11, fontWeight: 600, padding: "4px 8px", borderRadius: 4, textAlign: "center", marginTop: 4 },
+  claimBtn: { padding: "8px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, marginTop: 8 },
 };
 
 export default FoodMap;

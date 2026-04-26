@@ -25,6 +25,8 @@ const Loader = () => (
   </div>
 );
 
+import { Outlet } from "react-router-dom";
+
 // Loading fallback for lazy loaded routes
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -32,6 +34,18 @@ const LoadingFallback = () => (
       <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
       <p className="mt-4 text-gray-600">Loading...</p>
     </div>
+  </div>
+);
+
+const PublicLayout = () => (
+  <div className="flex flex-col min-h-screen">
+    <NavBar />
+    <main className="flex-grow">
+      <Suspense fallback={<LoadingFallback />}>
+        <Outlet />
+      </Suspense>
+    </main>
+    <Footer />
   </div>
 );
 
@@ -53,44 +67,36 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <NavBar />
-        <main className="flex-grow">
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/map" element={<FoodMap />} />
+      <Routes>
+        {/* Public Layout Routes (includes NavBar and Footer) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/map" element={<FoodMap />} />
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
+          />
+          <Route 
+            path="/signup" 
+            element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
 
-              {/* Auth Routes */}
-              <Route 
-                path="/login" 
-                element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
-              />
-              <Route 
-                path="/signup" 
-                element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
-              />
-
-              {/* Protected Routes */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <PrivateRoute user={user}>
-                    <Dashboard />
-                  </PrivateRoute>
-                } 
-              />
-
-              {/* Default redirect for unknown routes */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <Footer />
-      </div>
+        {/* Dashboard Route (No main NavBar/Footer) */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <PrivateRoute user={user}>
+              <Suspense fallback={<LoadingFallback />}>
+                <Dashboard />
+              </Suspense>
+            </PrivateRoute>
+          } 
+        />
+      </Routes>
     </Router>
   );
 }
