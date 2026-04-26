@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { auth } from "../firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
 } from "firebase/auth";
@@ -27,11 +28,27 @@ const EyeOffIcon = () => (
 );
 
 const Auth = ({ onSuccess }) => {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "donor" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Handle Google redirect result when page loads after redirect
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await saveUserToFirestore(result.user);
+          if (onSuccess) onSuccess();
+        }
+      })
+      .catch((err) => {
+        if (err.code !== 'auth/null-user') {
+          setError(getFriendlyError(err.code));
+        }
+      });
+  }, []);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -82,12 +99,11 @@ const Auth = ({ onSuccess }) => {
     setError("");
     setLoading(true);
     try {
-      const { user } = await signInWithPopup(auth, googleProvider);
-      await saveUserToFirestore(user);
-      if (onSuccess) onSuccess();
+      // Use redirect instead of popup — never blocked by browser
+      await signInWithRedirect(auth, googleProvider);
+      // Page will redirect — result handled in useEffect above
     } catch (err) {
       setError(getFriendlyError(err.code));
-    } finally {
       setLoading(false);
     }
   };
@@ -102,7 +118,8 @@ const Auth = ({ onSuccess }) => {
       "auth/weak-password": "Password must be at least 6 characters.",
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/popup-closed-by-user": "Google sign-in was cancelled.",
-      "auth/too-many-requests": "Too many failed attempts. Please wait a moment and try again.",
+      "auth/popup-blocked": "Popup was blocked. Redirecting you to Google sign-in...",
+      "auth/too-many-requests": "Too many failed attempts. Please wait a moment.",
       "auth/network-request-failed": "Network error. Please check your connection.",
     };
     return errors[code] || `Login failed (${code}). Please try again.`;
