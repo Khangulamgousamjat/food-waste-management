@@ -249,6 +249,7 @@ const Auth = ({ onSuccess }) => {
 
           <button type="submit" style={styles.submitBtn} disabled={loading}>
             {loading ? "Please wait..." : mode === "login" ? "Log In" : "Create Account"}
+          </button>
         </form>
       </div>
     </div>
