@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { auth, db, storage } from "../firebase";
+import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { X, Upload, Image as ImageIcon } from "lucide-react";
+import { X, Upload } from "lucide-react";
+
+// ✅ FREE image hosting — no credit card needed
+// Get your free API key at: https://api.imgbb.com/
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
+
+const uploadToImgBB = async (file) => {
+  if (!IMGBB_API_KEY) {
+    throw new Error("ImgBB API key not set. Add VITE_IMGBB_API_KEY to your .env file.");
+  }
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error?.message || "ImgBB upload failed");
+  return data.data.url; // returns the public image URL
+};
 
 const DonationModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -18,6 +36,7 @@ const DonationModal = ({ isOpen, onClose }) => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [expiryWarning, setExpiryWarning] = useState(false);
   const [userLocation, setUserLocation] = useState([20.5937, 78.9629]);
 
@@ -25,30 +44,30 @@ const DonationModal = ({ isOpen, onClose }) => {
     if (isOpen) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-        () => {} // fallback
+        () => {}
       );
+      // Reset form on open
+      setUploadStatus("");
     }
   }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
     if (name === "expiryTime") {
       const selectedTime = new Date(value).getTime();
-      const now = Date.now();
       const twoHours = 2 * 60 * 60 * 1000;
-      if (selectedTime - now < twoHours && selectedTime > now) {
-        setExpiryWarning(true);
-      } else {
-        setExpiryWarning(false);
-      }
+      setExpiryWarning(selectedTime - Date.now() < twoHours && selectedTime > Date.now());
     }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image too large. Please choose an image under 5MB.");
+        return;
+      }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
@@ -60,27 +79,29 @@ const DonationModal = ({ isOpen, onClose }) => {
     if (!formData.expiryTime) return alert("Please select an expiry time.");
 
     setLoading(true);
-    try {
-      let imageUrl = "";
-      if (imageFile) {
+    setUploadStatus("");
+
+    let imageUrl = "";
+
+    // Step 1: Upload image (if selected)
+    if (imageFile) {
+      if (!IMGBB_API_KEY) {
+        setUploadStatus("⚠️ No ImgBB key set — submitting without image.");
+      } else {
         try {
-          const imageRef = ref(storage, `food_images/${Date.now()}_${imageFile.name}`);
-          
-          let timeoutId;
-          const timeoutPromise = new Promise((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error("Storage upload timed out. Did you enable Firebase Storage in the console?")), 15000);
-          });
-          
-          const snapshot = await Promise.race([uploadBytes(imageRef, imageFile), timeoutPromise]);
-          clearTimeout(timeoutId);
-          
-          imageUrl = await getDownloadURL(snapshot.ref);
-        } catch (storageErr) {
-          console.error("Storage Error:", storageErr);
-          alert("Image upload failed: " + storageErr.message + "\n\nProceeding without image...");
+          setUploadStatus("📸 Uploading image...");
+          imageUrl = await uploadToImgBB(imageFile);
+          setUploadStatus("✅ Image uploaded!");
+        } catch (imgErr) {
+          console.error("ImgBB Error:", imgErr);
+          setUploadStatus("⚠️ Image upload failed — submitting without image.");
         }
       }
+    }
 
+    // Step 2: Save to Firestore
+    try {
+      setUploadStatus((prev) => prev + " 💾 Saving donation...");
       await addDoc(collection(db, "listings"), {
         ...formData,
         imageUrl,
@@ -93,11 +114,23 @@ const DonationModal = ({ isOpen, onClose }) => {
         expiryTime: new Date(formData.expiryTime).getTime(),
       });
 
-      alert("Donation listed successfully!");
+      alert("✅ Donation listed successfully! Recipients can now see your listing.");
+      // Reset form
+      setFormData({
+        title: "", foodType: "veg", quantity: "", description: "",
+        cookedType: "freshly_cooked", expiryTime: "", pickupLocation: "", contactNumber: "",
+      });
+      setImageFile(null);
+      setImagePreview(null);
+      setUploadStatus("");
       onClose();
     } catch (err) {
-      console.error("Submission Error:", err);
-      alert("Error saving donation: " + err.message + "\n\nPlease ensure your user role is Donor and your Firebase rules are set correctly.");
+      console.error("Firestore Error:", err);
+      if (err.code === "permission-denied") {
+        alert("❌ Permission denied.\n\nMake sure your account role is set to 'donor' in Firebase.\n\nGo to Firebase Console → Firestore → users → your user document → change role to 'donor'");
+      } else {
+        alert("❌ Error saving donation: " + err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,7 +143,7 @@ const DonationModal = ({ isOpen, onClose }) => {
       <div style={styles.modal}>
         <div style={styles.header}>
           <h2 style={styles.title}>Start Donating</h2>
-          <button style={styles.closeBtn} onClick={onClose}><X size={24} /></button>
+          <button style={styles.closeBtn} onClick={onClose} disabled={loading}><X size={24} /></button>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -148,7 +181,9 @@ const DonationModal = ({ isOpen, onClose }) => {
 
           {/* Image Upload */}
           <div style={styles.field}>
-            <label style={styles.label}>Food Image</label>
+            <label style={styles.label}>
+              Food Image <span style={{fontWeight: 400, color: "#6b7280", fontSize: 12}}>(optional — free via ImgBB)</span>
+            </label>
             <div style={styles.imageUploadWrapper}>
               <label style={styles.imageUploadBtn}>
                 <Upload size={18} /> Upload Photo
@@ -159,14 +194,20 @@ const DonationModal = ({ isOpen, onClose }) => {
                   <img src={imagePreview} alt="Preview" style={styles.imagePreview} />
                 </div>
               )}
+              {imageFile && !imagePreview && <span style={{fontSize: 12, color: "#6b7280"}}>{imageFile.name}</span>}
             </div>
+            {!IMGBB_API_KEY && (
+              <p style={{fontSize: 12, color: "#d97706", marginTop: 4}}>
+                ⚠️ Add <code>VITE_IMGBB_API_KEY</code> to your .env for image uploads to work.
+              </p>
+            )}
           </div>
 
           {/* Expiry Time */}
           <div style={styles.field}>
             <label style={styles.label}>Expiry / Best Before</label>
             <input type="datetime-local" style={styles.input} name="expiryTime" value={formData.expiryTime} onChange={handleChange} required />
-            {expiryWarning && <p style={styles.warning}>Warning: Food expires in less than 2 hours.</p>}
+            {expiryWarning && <p style={styles.warning}>⚠️ Warning: Food expires in less than 2 hours.</p>}
           </div>
 
           {/* Pickup & Contact */}
@@ -187,8 +228,13 @@ const DonationModal = ({ isOpen, onClose }) => {
             <textarea style={{...styles.input, minHeight: 80}} name="description" value={formData.description} onChange={handleChange} placeholder="Pickup instructions, notes, etc." required />
           </div>
 
-          <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? "Submitting..." : "Submit Donation"}
+          {/* Upload Status */}
+          {uploadStatus && (
+            <div style={styles.statusBox}>{uploadStatus}</div>
+          )}
+
+          <button type="submit" style={{...styles.submitBtn, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer"}} disabled={loading}>
+            {loading ? "Please wait..." : "Submit Donation"}
           </button>
         </form>
       </div>
@@ -217,21 +263,22 @@ const styles = {
   row: { display: "flex", gap: "16px", flexWrap: "wrap" },
   field: { flex: 1, display: "flex", flexDirection: "column", gap: "6px", minWidth: "200px" },
   label: { fontSize: 14, fontWeight: 600, color: "#374151" },
-  input: { padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" },
+  input: { padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box" },
   radioGroup: { display: "flex", gap: "16px", flexWrap: "wrap" },
   radioLabel: { display: "flex", alignItems: "center", gap: "6px", fontSize: 14, cursor: "pointer" },
-  imageUploadWrapper: { display: "flex", alignItems: "center", gap: "16px" },
+  imageUploadWrapper: { display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" },
   imageUploadBtn: {
     display: "flex", alignItems: "center", gap: "8px",
     padding: "10px 16px", background: "#f3f4f6", border: "1px dashed #d1d5db",
     borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#4b5563"
   },
-  previewContainer: { width: 60, height: 60, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" },
+  previewContainer: { width: 60, height: 60, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb", flexShrink: 0 },
   imagePreview: { width: "100%", height: "100%", objectFit: "cover" },
   warning: { color: "#ef4444", fontSize: 12, marginTop: 4, fontWeight: 500 },
+  statusBox: { background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#166534" },
   submitBtn: {
     marginTop: "8px", padding: "12px", background: "#16a34a", color: "#fff",
-    border: "none", borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: "pointer"
+    border: "none", borderRadius: 8, fontSize: 16, fontWeight: 600
   }
 };
 
