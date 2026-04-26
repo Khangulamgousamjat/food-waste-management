@@ -79,13 +79,14 @@ const AdminDashboard = () => {
     <div style={styles.page}>
       {/* Admin Sidebar */}
       <aside style={styles.sidebar}>
-        <div style={styles.sidebarLogo}>Admin Panel</div>
+        <div style={styles.sidebarLogo}>FoodShare Admin</div>
 
         <div style={styles.userCard}>
           <div style={styles.avatar}>G</div>
           <div>
             <div style={styles.userName}>Gous Khan</div>
-            <div style={styles.userRole}>Super Admin</div>
+            <div style={styles.userEmail}>Super Admin</div>
+            <div style={styles.userRole}>admin</div>
           </div>
         </div>
 
@@ -383,48 +384,49 @@ const SettingsTab = () => (
 );
 
 const styles = {
-  page: { display: "flex", minHeight: "100vh", background: "#f1f5f9" },
-  sidebar: { width: 250, background: "#0f172a", padding: "1.5rem 1rem", display: "flex", flexDirection: "column", flexShrink: 0 },
-  sidebarLogo: { color: "#f59e0b", fontSize: 24, fontWeight: 700, marginBottom: "1.5rem" },
-  userCard: { display: "flex", alignItems: "center", gap: 10, background: "#1e293b", borderRadius: 10, padding: "10px", marginBottom: "1.5rem" },
-  avatar: { width: 40, height: 40, borderRadius: "50%", background: "#f59e0b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
-  userName: { color: "#f8fafc", fontSize: 14, fontWeight: 600 },
-  userRole: { fontSize: 11, background: "#dc2626", color: "#fff", padding: "2px 6px", borderRadius: 4, display: "inline-block", marginTop: 2 },
+  page: { display: "flex", minHeight: "100vh", background: "#f9fafb" },
+  sidebar: { width: 240, background: "#111827", padding: "1.5rem 1rem", display: "flex", flexDirection: "column", gap: 0, flexShrink: 0 },
+  sidebarLogo: { color: "#4ade80", fontSize: 22, fontWeight: 700, marginBottom: "1.5rem" },
+  userCard: { display: "flex", alignItems: "center", gap: 10, background: "#1f2937", borderRadius: 10, padding: "10px 12px", marginBottom: "1.5rem" },
+  avatar: { width: 38, height: 38, borderRadius: "50%", background: "#16a34a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, flexShrink: 0 },
+  userName: { color: "#f9fafb", fontSize: 13, fontWeight: 600 },
+  userEmail: { color: "#9ca3af", fontSize: 11, marginTop: 1 },
+  userRole: { fontSize: 10, background: "#16a34a", color: "#fff", padding: "1px 6px", borderRadius: 4, display: "inline-block", marginTop: 3, textTransform: "capitalize" },
   nav: { display: "flex", flexDirection: "column", gap: 4, flex: 1 },
-  navItem: { padding: "10px 12px", border: "none", background: "transparent", color: "#94a3b8", textAlign: "left", cursor: "pointer", borderRadius: 8, fontSize: 14, fontWeight: 500 },
-  navActive: { background: "#1e293b", color: "#f59e0b" },
-  signOutBtn: { padding: "10px", background: "transparent", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, marginTop: "auto" },
-  sidebarFooter: { color: "#64748b", fontSize: 11, marginTop: 16, textAlign: "center" },
+  navItem: { padding: "9px 12px", border: "none", background: "transparent", color: "#9ca3af", textAlign: "left", cursor: "pointer", borderRadius: 8, fontSize: 13, fontWeight: 500 },
+  navActive: { background: "#1f2937", color: "#4ade80" },
+  signOutBtn: { padding: "8px 12px", background: "#1f2937", color: "#ef4444", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, textAlign: "left", marginTop: "1rem" },
+  sidebarFooter: { color: "#4b5563", fontSize: 11, marginTop: 12, textAlign: "center" },
   main: { flex: 1, padding: "2rem", overflowY: "auto" },
-  pageTitle: { fontSize: 24, fontWeight: 700, color: "#0f172a", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: 10 },
+  pageTitle: { fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: "1.5rem" },
   liveDot: { width: 10, height: 10, background: "#22c55e", borderRadius: "50%", display: "inline-block", animation: "pulse 1.5s infinite" },
-  statsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: "2rem" },
-  statCard: { background: "#fff", borderRadius: 12, padding: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
-  statNum: { fontSize: 32, fontWeight: 700, marginBottom: 4 },
-  statLabel: { fontSize: 13, color: "#64748b", fontWeight: 600, textTransform: "uppercase" },
-  card: { background: "#fff", borderRadius: 12, padding: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: 20 },
-  cardTitle: { fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: "1rem" },
+  statsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: "2rem" },
+  statCard: { background: "#fff", borderRadius: 12, padding: "1.25rem", textAlign: "center", border: "1px solid #e5e7eb" },
+  statNum: { fontSize: 32, fontWeight: 700 },
+  statLabel: { fontSize: 13, color: "#6b7280", marginTop: 4 },
+  card: { background: "#fff", borderRadius: 12, padding: "1.25rem", border: "1px solid #e5e7eb", marginBottom: 20 },
+  cardTitle: { fontSize: 15, fontWeight: 600, color: "#111827", marginBottom: "1rem" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: 14 },
-  trHeader: { borderBottom: "2px solid #e2e8f0" },
-  th: { textAlign: "left", padding: "12px 10px", color: "#64748b", fontWeight: 600 },
-  tr: { borderBottom: "1px solid #e2e8f0" },
-  td: { padding: "12px 10px", color: "#334155" },
+  trHeader: { borderBottom: "2px solid #f3f4f6" },
+  th: { textAlign: "left", padding: "12px 10px", color: "#9ca3af", fontWeight: 600, fontSize: 12, textTransform: "uppercase" },
+  tr: { borderBottom: "1px solid #f3f4f6" },
+  td: { padding: "12px 10px", color: "#374151" },
   badge: (status) => {
-    let bg = "#f1f5f9", color = "#64748b";
+    let bg = "#f3f4f6", color = "#6b7280";
     if (status === "available") { bg = "#dcfce7"; color = "#16a34a"; }
     else if (status === "claimed") { bg = "#dbeafe"; color = "#2563eb"; }
     else if (status === "expired" || status === "removed") { bg = "#fee2e2"; color = "#dc2626"; }
-    return { padding: "4px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700, background: bg, color: color };
+    return { padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: bg, color: color };
   },
   filterBar: { display: "flex", gap: 12, marginBottom: "1.5rem" },
-  input: { flex: 1, maxWidth: 300, padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none" },
-  select: { padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", background: "#fff" },
-  tableAvatar: { width: 32, height: 32, background: "#e2e8f0", color: "#475569", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
-  dangerBtn: { padding: "4px 10px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" },
-  warningBtn: { padding: "4px 10px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" },
+  input: { flex: 1, maxWidth: 300, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 8, outline: "none", fontSize: 14 },
+  select: { padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 8, outline: "none", background: "#fff", fontSize: 14 },
+  tableAvatar: { width: 32, height: 32, background: "#f3f4f6", color: "#374151", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
+  dangerBtn: { padding: "6px 12px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" },
+  warningBtn: { padding: "6px 12px", background: "#fffbeb", color: "#d97706", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" },
   thumb: { width: 40, height: 40, borderRadius: 6, objectFit: "cover" },
-  thumbPlaceholder: { width: 40, height: 40, borderRadius: 6, background: "#e2e8f0", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" },
-  settingRow: { marginBottom: 10, color: "#334155", fontSize: 15 }
+  thumbPlaceholder: { width: 40, height: 40, borderRadius: 6, background: "#f3f4f6", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" },
+  settingRow: { marginBottom: 10, color: "#374151", fontSize: 14 }
 };
 
 export default AdminDashboard;
