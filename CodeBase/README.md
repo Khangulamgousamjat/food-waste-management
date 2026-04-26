@@ -187,6 +187,7 @@ A **live web platform** where:
 **Team Digital Spartans**
 
 * Khan Gulamgous Amjat
+* Hasib Masihuddin Shaikh
 
 📧 [Gousk2004@gmail.com](mailto:Gousk2004@gmail.com)
 
