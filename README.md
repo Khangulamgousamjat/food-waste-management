@@ -191,7 +191,3 @@ it is hackathon-ready and production-capable.
 MADE BY GOUS KHAN
 
 
-
-
-
-with **technology + social impact + usability**, it is hackathon-ready and production-capable.
