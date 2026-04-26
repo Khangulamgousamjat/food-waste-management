@@ -83,6 +83,31 @@ A **live web platform** where:
 
 ---
 
+## 📂 Project Structure
+
+```text
+📦 FoodShare
+ ┣ 📂 public               # Static assets (images, icons)
+ ┣ 📂 src                  # Main source code
+ ┃ ┣ 📂 components         # Reusable UI components
+ ┃ ┃ ┣ 📂 ui               # Layout elements (NavBar, Footer)
+ ┃ ┃ ┣ 📜 Auth.jsx         # Authentication logic & UI
+ ┃ ┃ ┣ 📜 DonationModal.jsx # Food listing form
+ ┃ ┃ ┗ 📜 Map.jsx          # Interactive Leaflet map
+ ┃ ┣ 📂 pages              # Application views
+ ┃ ┃ ┣ 📜 HomePage.tsx     # Landing page
+ ┃ ┃ ┣ 📜 Dashboard.jsx    # User portal (Donor/Recipient)
+ ┃ ┃ ┗ 📜 AdminDashboard.jsx # Administrative control
+ ┃ ┣ 📜 App.jsx            # Routing & global state
+ ┃ ┣ 📜 firebase.js        # Firebase initialization
+ ┃ ┗ 📜 index.css          # Global styling & Tailwind
+ ┣ 📜 firestore.rules      # Security rules for Firestore
+ ┣ 📜 package.json         # Dependencies & scripts
+ ┗ 📜 README.md            # Documentation
+```
+
+---
+
 ## 🔄 User Flow
 
 ### 🍱 Donor Journey
@@ -171,31 +196,6 @@ A **live web platform** where:
 
 ```md
 (Add your real screenshots here — homepage, map, dashboard, etc.)
-```
-
----
-
-## 📂 Project Structure
-
-```text
-📦 FoodShare
- ┣ 📂 public               # Static assets (images, icons)
- ┣ 📂 src                  # Main source code
- ┃ ┣ 📂 components         # Reusable UI components
- ┃ ┃ ┣ 📂 ui               # Layout elements (NavBar, Footer)
- ┃ ┃ ┣ 📜 Auth.jsx         # Authentication logic & UI
- ┃ ┃ ┣ 📜 DonationModal.jsx # Food listing form
- ┃ ┃ ┗ 📜 Map.jsx          # Interactive Leaflet map
- ┃ ┣ 📂 pages              # Application views
- ┃ ┃ ┣ 📜 HomePage.tsx     # Landing page
- ┃ ┃ ┣ 📜 Dashboard.jsx    # User portal (Donor/Recipient)
- ┃ ┃ ┗ 📜 AdminDashboard.jsx # Administrative control
- ┃ ┣ 📜 App.jsx            # Routing & global state
- ┃ ┣ 📜 firebase.js        # Firebase initialization
- ┃ ┗ 📜 index.css          # Global styling & Tailwind
- ┣ 📜 firestore.rules      # Security rules for Firestore
- ┣ 📜 package.json         # Dependencies & scripts
- ┗ 📜 README.md            # Documentation
 ```
 
 ---
