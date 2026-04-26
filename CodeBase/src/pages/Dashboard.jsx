@@ -71,7 +71,7 @@ const Dashboard = () => {
       // Sort and filter for state
       setMyListings(allData.filter((l) => l.donorId === user.uid));
       setAvailableListings(allData.filter((l) => l.status === "available" && (!l.expiryTime || l.expiryTime > Date.now())));
-      setMyClaimed(allData.filter((l) => l.claimedBy === user.uid));
+      setMyClaimed(allData.filter((l) => l.claimedBy === user.uid && l.status !== "removed"));
 
       const mine = allData.filter((l) => l.donorId === user.uid);
       setStats({

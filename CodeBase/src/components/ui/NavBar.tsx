@@ -156,6 +156,15 @@ const NavBar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
+                {user.email === "Gousk2004@gmail.com" && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 font-bold"
+                  >
+                    <span>Admin Panel</span>
+                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">Admin</span>
+                  </Link>
+                )}
                 <Link
                   to="/dashboard"
                   className="flex items-center space-x-2 text-gray-700 hover:text-primary-500"
@@ -303,6 +312,11 @@ const NavBar: React.FC = () => {
               <div className="flex flex-col space-y-4 pt-4 border-t border-gray-200">
                 {user ? (
                   <>
+                    {user.email === "Gousk2004@gmail.com" && (
+                      <Link to="/admin" className="btn-primary w-full bg-red-600 hover:bg-red-700 text-white">
+                        Admin Panel
+                      </Link>
+                    )}
                     <Link to="/dashboard" className="btn-primary w-full">
                       Dashboard
                     </Link>

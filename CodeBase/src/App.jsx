@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db } from "./firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 // Keep ALL existing page imports that were there before
 import NavBar from "./components/ui/NavBar";
@@ -14,6 +15,9 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 import Auth from "./components/Auth";
 import FoodMap from "./components/Map";
 import Dashboard from "./pages/Dashboard";
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+const ADMIN_EMAIL = "Gousk2004@gmail.com";
 
 // Loading spinner
 const Loader = () => (
@@ -57,9 +61,36 @@ const PrivateRoute = ({ children, user }) => {
 
 function App() {
   const [user, setUser] = useState(undefined); // undefined = loading
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u || null));
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        if (u.email === ADMIN_EMAIL) {
+          setIsAdmin(true);
+          setUser(u);
+        } else {
+          setIsAdmin(false);
+          // Check if user is removed
+          try {
+            const userDocRef = doc(db, "users", u.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data().status === "removed") {
+              await signOut(auth);
+              alert("Your account has been suspended. \nContact admin at Gousk2004@gmail.com");
+              setUser(null);
+              return;
+            }
+          } catch (err) {
+            console.error("Error checking user status", err);
+          }
+          setUser(u);
+        }
+      } else {
+        setIsAdmin(false);
+        setUser(null);
+      }
+    });
     return () => unsub();
   }, []);
 
@@ -76,11 +107,11 @@ function App() {
           <Route path="/map" element={<FoodMap />} />
           <Route 
             path="/login" 
-            element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
+            element={user ? <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace /> : <Auth onSuccess={() => {}} />} 
           />
           <Route 
             path="/signup" 
-            element={user ? <Navigate to="/dashboard" replace /> : <Auth onSuccess={() => {}} />} 
+            element={user ? <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace /> : <Auth onSuccess={() => {}} />} 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
@@ -91,9 +122,23 @@ function App() {
           element={
             <PrivateRoute user={user}>
               <Suspense fallback={<LoadingFallback />}>
-                <Dashboard />
+                {isAdmin ? <Navigate to="/admin" replace /> : <Dashboard />}
               </Suspense>
             </PrivateRoute>
+          } 
+        />
+
+        {/* Admin Route */}
+        <Route 
+          path="/admin" 
+          element={
+            isAdmin ? (
+              <Suspense fallback={<LoadingFallback />}>
+                <AdminDashboard />
+              </Suspense>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           } 
         />
       </Routes>

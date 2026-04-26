@@ -12,9 +12,10 @@ service cloud.firestore {
       
       // Update logic
       allow update: if request.auth != null && (
+        // Admin override
+        request.auth.token.email == "Gousk2004@gmail.com" ||
         // Donors can update their own listings
         request.auth.uid == resource.data.donorId ||
-        
         // Recipients can claim listings (update status and claimedBy)
         (
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'recipient' &&
@@ -24,16 +25,22 @@ service cloud.firestore {
         )
       );
 
-      // Only the donor can delete their own listing
-      allow delete: if request.auth != null && request.auth.uid == resource.data.donorId;
+      // Only the donor or admin can delete their own listing
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.donorId || 
+        request.auth.token.email == "Gousk2004@gmail.com"
+      );
     }
 
     match /users/{userId} {
       // Anyone logged in can read user profiles (needed for leaderboards/roles)
       allow read: if request.auth != null;
       
-      // Users can write their own profile
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Users can write their own profile, or admin can
+      allow write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email == "Gousk2004@gmail.com"
+      );
 
       // Allow recipients to increment a donor's points when claiming food
       allow update: if request.auth != null && 
