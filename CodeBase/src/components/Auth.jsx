@@ -12,11 +12,26 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const googleProvider = new GoogleAuthProvider();
 
+const EyeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
+
 const Auth = ({ onSuccess }) => {
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "donor" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -81,12 +96,16 @@ const Auth = ({ onSuccess }) => {
     const errors = {
       "auth/user-not-found": "No account found with this email.",
       "auth/wrong-password": "Incorrect password. Try again.",
+      "auth/invalid-credential": "Incorrect email or password. Please check and try again.",
+      "auth/invalid-login-credentials": "Incorrect email or password. Please check and try again.",
       "auth/email-already-in-use": "This email is already registered.",
       "auth/weak-password": "Password must be at least 6 characters.",
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+      "auth/too-many-requests": "Too many failed attempts. Please wait a moment and try again.",
+      "auth/network-request-failed": "Network error. Please check your connection.",
     };
-    return errors[code] || "Something went wrong. Please try again.";
+    return errors[code] || `Login failed (${code}). Please try again.`;
   };
 
   return (
@@ -106,13 +125,13 @@ const Auth = ({ onSuccess }) => {
         <div style={styles.tabBar}>
           <button
             style={{ ...styles.tab, ...(mode === "login" ? styles.tabActive : {}) }}
-            onClick={() => { setMode("login"); setError(""); }}
+            onClick={() => { setMode("login"); setError(""); setShowPassword(false); }}
           >
             Log In
           </button>
           <button
             style={{ ...styles.tab, ...(mode === "signup" ? styles.tabActive : {}) }}
-            onClick={() => { setMode("signup"); setError(""); }}
+            onClick={() => { setMode("signup"); setError(""); setShowPassword(false); }}
           >
             Sign Up
           </button>
@@ -163,15 +182,25 @@ const Auth = ({ onSuccess }) => {
 
           <div style={styles.field}>
             <label style={styles.label}>Password</label>
-            <input
-              name="password"
-              type="password"
-              placeholder="Min 6 characters"
-              value={form.password}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
+            <div style={styles.passwordWrapper}>
+              <input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 6 characters"
+                value={form.password}
+                onChange={handleChange}
+                required
+                style={{ ...styles.input, paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={styles.eyeBtn}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           {mode === "signup" && (
@@ -292,6 +321,23 @@ const styles = {
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color 0.2s",
+  },
+  passwordWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: 12,
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#9ca3af",
+    display: "flex",
+    alignItems: "center",
+    padding: 0,
+    lineHeight: 1,
   },
   roleRow: { display: "flex", gap: 10 },
   roleBtn: {

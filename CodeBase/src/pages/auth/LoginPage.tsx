@@ -4,7 +4,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 const ADMIN_EMAIL = "Gousk2004@gmail.com";
 
@@ -16,6 +16,7 @@ const LoginPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,9 +59,11 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       const friendlyMsg =
         error.code === 'auth/user-not-found' ? 'No account found with this email.' :
-        error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential' ? 'Incorrect password. Try again.' :
+        error.code === 'auth/wrong-password' ? 'Incorrect password. Try again.' :
+        error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials' ? 'Incorrect email or password. Please check and try again.' :
         error.code === 'auth/invalid-email' ? 'Please enter a valid email address.' :
-        'Failed to login. Please try again.';
+        error.code === 'auth/too-many-requests' ? 'Too many failed attempts. Please wait and try again.' :
+        'Login failed. Please check your credentials.';
       toast.error(friendlyMsg);
       setErrors({ general: friendlyMsg });
     } finally {
@@ -127,18 +130,27 @@ const LoginPage: React.FC = () => {
                     <input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       value={formData.password}
                       onChange={handleChange}
-                      className={`pl-10 input-field ${errors.password ? 'border-error-500 focus:ring-error-500' : ''}`}
+                      className={`pl-10 pr-10 input-field ${errors.password ? 'border-error-500 focus:ring-error-500' : ''}`}
                       placeholder="••••••••"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
                   </div>
                   {errors.password && (
                     <p className="mt-1 text-sm text-error-600">{errors.password}</p>
                   )}
                 </div>
+
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">

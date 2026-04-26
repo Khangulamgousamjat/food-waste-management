@@ -13,6 +13,8 @@ import {
   Building,
   Home,
   Upload,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // Account types
@@ -43,6 +45,8 @@ const SignupPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked, files } = e.target;
@@ -346,17 +350,25 @@ const SignupPage: React.FC = () => {
                         <input
                           id="password"
                           name="password"
-                          type="password"
+                          type={showPassword ? 'text' : 'password'}
                           autoComplete="new-password"
                           value={formData.password}
                           onChange={handleChange}
-                          className={`pl-10 input-field ${
+                          className={`pl-10 pr-10 input-field ${
                             errors.password
                               ? "border-error-500 focus:ring-error-500"
                               : ""
                           }`}
                           placeholder="••••••••"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(v => !v)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                       {errors.password && (
                         <p className="mt-1 text-sm text-error-600">
@@ -379,17 +391,25 @@ const SignupPage: React.FC = () => {
                         <input
                           id="confirmPassword"
                           name="confirmPassword"
-                          type="password"
+                          type={showConfirmPassword ? 'text' : 'password'}
                           autoComplete="new-password"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className={`pl-10 input-field ${
+                          className={`pl-10 pr-10 input-field ${
                             errors.confirmPassword
                               ? "border-error-500 focus:ring-error-500"
                               : ""
                           }`}
                           placeholder="••••••••"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(v => !v)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                       {errors.confirmPassword && (
                         <p className="mt-1 text-sm text-error-600">
