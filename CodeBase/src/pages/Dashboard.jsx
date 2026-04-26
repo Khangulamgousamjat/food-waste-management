@@ -285,7 +285,7 @@ const Dashboard = () => {
         </nav>
 
         <button style={styles.signOutBtn} onClick={handleSignOut}>
-          Sign Out
+          Sign Out (Updated)
         </button>
       </aside>
 
@@ -588,7 +588,7 @@ const styles = {
   navItem: { padding: "9px 12px", border: "none", background: "transparent", color: "#9ca3af", textAlign: "left", cursor: "pointer", borderRadius: 8, fontSize: 13, fontWeight: 500 },
   navActive: { background: "#1f2937", color: "#4ade80" },
   signOutBtn: { padding: "8px 12px", background: "#1f2937", color: "#ef4444", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, textAlign: "left", marginTop: "1rem" },
-  sidebarFooter: { color: "#4b5563", fontSize: 11, marginTop: 12, textAlign: "center" },
+  // sidebarFooter removed
   main: { flex: 1, padding: "2rem", overflowY: "auto", maxWidth: 1000, margin: "0 auto" },
   pageTitle: { fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: "1.5rem" },
   
