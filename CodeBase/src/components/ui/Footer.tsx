@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Heart, Instagram, Twitter, Facebook, Mail } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
+  const location = useLocation();
+  const showCredit = location.pathname === '/';
 
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
@@ -115,10 +117,12 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-          <p className="flex items-center justify-center">
-            Made with <Heart size={16} className="mx-1 text-error-500" /> by Gous Khan
-          </p>
-          <p className="mt-2">
+          {showCredit && (
+            <p className="flex items-center justify-center mb-2">
+              Made with <Heart size={16} className="mx-1 text-error-500" /> by Gous Khan
+            </p>
+          )}
+          <p>
             &copy; {currentYear} FoodShare. All rights reserved.
           </p>
         </div>
