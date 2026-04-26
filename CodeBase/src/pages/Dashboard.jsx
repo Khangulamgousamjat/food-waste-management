@@ -27,7 +27,8 @@ const Dashboard = () => {
   const [myListings, setMyListings] = useState([]);
   const [availableListings, setAvailableListings] = useState([]);
   const [myClaimed, setMyClaimed] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview");
+  // Recipients see Available Food first; donors see their overview
+  const [activeTab, setActiveTab] = useState("available");
   const [leaderboard, setLeaderboard] = useState([]);
   const [stats, setStats] = useState({ total: 0, available: 0, claimed: 0 });
   const [showDonationModal, setShowDonationModal] = useState(false);
@@ -45,11 +46,16 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch user profile
+  // Fetch user profile + set default tab based on role
   useEffect(() => {
     if (!user) return;
     const unsub = onSnapshot(doc(db, "users", user.uid), (snap) => {
-      if (snap.exists()) setUserProfile(snap.data());
+      if (snap.exists()) {
+        const profile = snap.data();
+        setUserProfile(profile);
+        // Donors default to overview, recipients default to available food
+        setActiveTab(profile.role === "donor" ? "overview" : "available");
+      }
     });
     return () => unsub();
   }, [user]);
