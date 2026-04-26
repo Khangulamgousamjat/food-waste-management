@@ -143,7 +143,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 - **Netlify** for hosting and deployment.
 - Google Maps API for location services.
 
----
 
-### **Contact**
-For any queries or feedback, contact us at [maverick4bros@gmail.com].
+Made By Gous Khan 
+
