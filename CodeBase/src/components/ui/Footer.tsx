@@ -117,13 +117,13 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-          {showCredit && (
-            <p className="flex items-center justify-center mb-2">
-              Made with <Heart size={16} className="mx-1 text-error-500" /> by Gous Khan
-            </p>
-          )}
-          <p>
-            &copy; {currentYear} FoodShare. All rights reserved.
+          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span>&copy; {currentYear} FoodShare. All rights reserved.</span>
+            {showCredit && (
+              <span className="flex items-center">
+                · Made with <Heart size={16} className="mx-1 text-error-500" /> by Gous Khan
+              </span>
+            )}
           </p>
         </div>
       </div>
