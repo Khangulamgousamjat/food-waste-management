@@ -63,9 +63,22 @@ const DonationModal = ({ isOpen, onClose }) => {
     try {
       let imageUrl = "";
       if (imageFile) {
-        const imageRef = ref(storage, `food_images/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(imageRef, imageFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        try {
+          const imageRef = ref(storage, `food_images/${Date.now()}_${imageFile.name}`);
+          
+          let timeoutId;
+          const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("Storage upload timed out. Did you enable Firebase Storage in the console?")), 15000);
+          });
+          
+          const snapshot = await Promise.race([uploadBytes(imageRef, imageFile), timeoutPromise]);
+          clearTimeout(timeoutId);
+          
+          imageUrl = await getDownloadURL(snapshot.ref);
+        } catch (storageErr) {
+          console.error("Storage Error:", storageErr);
+          alert("Image upload failed: " + storageErr.message + "\n\nProceeding without image...");
+        }
       }
 
       await addDoc(collection(db, "listings"), {
@@ -83,8 +96,8 @@ const DonationModal = ({ isOpen, onClose }) => {
       alert("Donation listed successfully!");
       onClose();
     } catch (err) {
-      console.error(err);
-      alert("Error: " + err.message);
+      console.error("Submission Error:", err);
+      alert("Error saving donation: " + err.message + "\n\nPlease ensure your user role is Donor and your Firebase rules are set correctly.");
     } finally {
       setLoading(false);
     }
