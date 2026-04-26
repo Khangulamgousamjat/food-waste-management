@@ -116,7 +116,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
           <p className="flex items-center justify-center">
-            Made with <Heart size={16} className="mx-1 text-error-500" /> by FoodShare Team
+            Made with <Heart size={16} className="mx-1 text-error-500" /> by Gous Khan
           </p>
           <p className="mt-2">
             &copy; {currentYear} FoodShare. All rights reserved.

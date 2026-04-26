@@ -56,7 +56,7 @@ const ImpactStats: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 bg-accent-50">
+    <section className="py-16 bg-accent-50 relative" style={{ backgroundImage: 'linear-gradient(rgba(240, 253, 244, 0.9), rgba(240, 253, 244, 0.9)), url(https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="container-custom">
         <motion.div 
           className="text-center mb-12"

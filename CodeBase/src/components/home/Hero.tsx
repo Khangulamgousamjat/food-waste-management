@@ -70,7 +70,7 @@ const Hero: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Link to="/auth/signup" className="btn-primary w-full sm:w-auto">
+              <Link to="/signup" className="btn-primary w-full sm:w-auto">
                 Get Started
               </Link>
               <Link to="/how-it-works" className="btn-outline w-full sm:w-auto group">
@@ -88,7 +88,7 @@ const Hero: React.FC = () => {
             className="lg:ml-auto"
           >
             <img 
-              src="https://i.pinimg.com/736x/76/57/4a/76574a55771e9930e90d6f04d2ec8337.jpg"
+              src="https://images.unsplash.com/photo-1593113598332-cd288d649433?w=1200"
               alt="People sharing food and reducing waste" 
               className="w-full h-auto rounded-lg shadow-xl"
             />

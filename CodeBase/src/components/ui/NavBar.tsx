@@ -11,7 +11,7 @@ const NavBar: React.FC = () => {
   const location = useLocation();
 
   // Check if current path is auth pages
-  const isAuthPage = location.pathname.includes("/auth/");
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
 
   // Handle scroll event to change navbar appearance
   useEffect(() => {
@@ -169,10 +169,10 @@ const NavBar: React.FC = () => {
               </div>
             ) : (
               <>
-                <Link to="/auth/login" className="btn-outline py-2">
+                <Link to="/login" className="btn-outline py-2">
                   Log In
                 </Link>
-                <Link to="/auth/signup" className="btn-primary py-2">
+                <Link to="/signup" className="btn-primary py-2">
                   Sign Up
                 </Link>
               </>
@@ -315,10 +315,10 @@ const NavBar: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Link to="/auth/login" className="btn-outline w-full">
+                    <Link to="/login" className="btn-outline w-full">
                       Log In
                     </Link>
-                    <Link to="/auth/signup" className="btn-primary w-full">
+                    <Link to="/signup" className="btn-primary w-full">
                       Sign Up
                     </Link>
                   </>

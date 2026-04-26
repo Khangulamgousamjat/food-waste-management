@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 
 const CallToAction: React.FC = () => {
   return (
-    <section className="py-20 bg-primary-600 relative overflow-hidden">
+    <section className="py-20 bg-primary-600 relative overflow-hidden" style={{ backgroundImage: 'linear-gradient(rgba(22, 163, 74, 0.85), rgba(22, 163, 74, 0.85)), url(https://images.unsplash.com/photo-1547592180-85f173990554?w=800)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {/* Decorative elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white"></div>
@@ -44,13 +44,13 @@ const CallToAction: React.FC = () => {
             viewport={{ once: true, margin: "-100px" }}
           >
             <Link 
-              to="/auth/signup" 
+              to="/signup?role=donor" 
               className="btn bg-white text-primary-600 hover:bg-gray-100 focus:ring-white w-full sm:w-auto"
             >
               Join as a Donor
             </Link>
             <Link 
-              to="/auth/signup" 
+              to="/signup?role=recipient" 
               className="btn bg-transparent border-2 border-white text-white hover:bg-primary-700 focus:ring-white w-full sm:w-auto"
             >
               Join as a Recipient
