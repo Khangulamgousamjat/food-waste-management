@@ -287,8 +287,6 @@ const Dashboard = () => {
         <button style={styles.signOutBtn} onClick={handleSignOut}>
           Sign Out
         </button>
-
-        <p style={styles.sidebarFooter}>Made with ❤️ by<br /><strong>Gous Khan</strong></p>
       </aside>
 
       {/* Main content */}
