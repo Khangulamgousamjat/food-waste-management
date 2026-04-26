@@ -61,16 +61,34 @@ const Dashboard = () => {
     const unsub = onSnapshot(q, (snap) => {
       const allData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      // Auto-expire check
-      allData.forEach(async (listing) => {
-        if (listing.status === "available" && listing.expiryTime && listing.expiryTime < Date.now()) {
-          await updateDoc(doc(db, "listings", listing.id), { status: "expired" });
-        }
-      });
+      // Auto-expire check — only run for donors to avoid permission errors
+      if (userProfile?.role === "donor" || !userProfile) {
+        allData.forEach(async (listing) => {
+          if (
+            listing.status === "available" &&
+            listing.expiryTime &&
+            listing.expiryTime < Date.now() &&
+            listing.donorId === user.uid // Only expire OWN listings
+          ) {
+            try {
+              await updateDoc(doc(db, "listings", listing.id), { status: "expired" });
+            } catch (e) {
+              // Silently ignore permission errors
+            }
+          }
+        });
+      }
 
       // Sort and filter for state
       setMyListings(allData.filter((l) => l.donorId === user.uid));
-      setAvailableListings(allData.filter((l) => l.status === "available" && (!l.expiryTime || l.expiryTime > Date.now())));
+      setAvailableListings(
+        allData.filter(
+          (l) =>
+            l.status === "available" &&
+            l.donorId !== user.uid && // Don't show own listings to claim
+            (!l.expiryTime || l.expiryTime > Date.now())
+        )
+      );
       setMyClaimed(allData.filter((l) => l.claimedBy === user.uid && l.status !== "removed"));
 
       const mine = allData.filter((l) => l.donorId === user.uid);
@@ -81,7 +99,7 @@ const Dashboard = () => {
       });
     });
     return () => unsub();
-  }, [user]);
+  }, [user, userProfile?.role]);
 
   // Fetch leaderboard
   useEffect(() => {
@@ -93,33 +111,53 @@ const Dashboard = () => {
   }, []);
 
   const markAsClaimed = async (listingId) => {
-    await updateDoc(doc(db, "listings", listingId), { status: "claimed" });
-    if (userProfile) {
-      const newPoints = (userProfile.points || 0) + 15;
-      await updateDoc(doc(db, "users", user.uid), { points: newPoints });
+    try {
+      // Donor marks their own listing as claimed — must only change 'status' (donor owns it)
+      await updateDoc(doc(db, "listings", listingId), { status: "claimed" });
+      if (userProfile) {
+        const newPoints = (userProfile.points || 0) + 15;
+        await updateDoc(doc(db, "users", user.uid), { points: newPoints });
+      }
+    } catch (err) {
+      console.error("Mark claimed error:", err);
+      alert("Failed to update listing: " + err.message);
     }
   };
 
   const markAsAvailable = async (listingId) => {
-    await updateDoc(doc(db, "listings", listingId), { status: "available" });
+    try {
+      await updateDoc(doc(db, "listings", listingId), { status: "available" });
+    } catch (err) {
+      console.error("Mark available error:", err);
+    }
   };
 
   const claimFood = async (listing) => {
     try {
+      // Firestore rule requires BOTH status and claimedBy together, nothing else
       await updateDoc(doc(db, "listings", listing.id), {
         status: "claimed",
         claimedBy: user.uid,
       });
-      // Award 5 points to donor
+      // Award 5 points to donor separately (allowed by points-only rule)
       if (listing.donorId) {
-        await updateDoc(doc(db, "users", listing.donorId), {
-          points: increment(5),
-        });
+        try {
+          await updateDoc(doc(db, "users", listing.donorId), {
+            points: increment(5),
+          });
+        } catch (pointsErr) {
+          console.warn("Could not award donor points:", pointsErr.message);
+          // Non-critical — don't fail the whole claim
+        }
       }
-      alert("Food claimed successfully!");
+      alert("✅ Food claimed successfully! Please pick it up at the location.");
     } catch (err) {
-      console.error(err);
-      alert("Failed to claim food.");
+      console.error("Claim food error:", err);
+      if (err.code === "permission-denied") {
+        alert("❌ Claim failed: Permission denied.\n\nThis can happen if:\n• You are logged in as a Donor (only Recipients can claim)\n• The listing was already claimed\n• Your Firestore rules need updating");
+      } else {
+        alert("❌ Failed to claim food: " + err.message);
+      }
     }
   };
 
